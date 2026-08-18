@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:todoapp/service/auth_service.dart';
 import 'package:todoapp/theme/app_theme.dart';
 import 'package:todoapp/utils/constants.dart';
 
@@ -14,7 +13,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin {
   late AnimationController _animationController;
-  final AuthClass _authClass = AuthClass();
   final _formKey = GlobalKey<FormState>();
   
   final TextEditingController _displayNameController = TextEditingController();

@@ -12,7 +12,6 @@ import 'package:todoapp/pages/StatsPage.dart';
 import 'package:todoapp/pages/ViewData.dart';
 import 'package:todoapp/providers/theme_provider.dart';
 import 'package:todoapp/service/auth_service.dart';
-import 'package:todoapp/theme/app_theme.dart';
 import 'package:todoapp/utils/constants.dart';
 import 'package:todoapp/utils/date_utils.dart';
 import 'package:todoapp/widgets/modern_bottom_nav.dart';
@@ -72,25 +71,42 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         .collection('Todo')
         .where('userId', isEqualTo: userId);
         
-    // Apply basic filters (temporarily disable date filters to avoid index issues)
-    switch (_selectedFilter) {
-      case 'Completed':
-        query = query.where('isCompleted', isEqualTo: true);
-        break;
-      case 'Pending':
-        query = query.where('isCompleted', isEqualTo: false);
-        break;
-      case 'Today':
-      case 'This Week':
-        // Temporarily disabled - requires composite indexes
-        print('Date filters temporarily disabled');
-        break;
-      default:
-        // Show all todos
-        break;
+    // 'status' is the field TodoModel actually persists; filtering on it needs
+    // only the single-field index Firestore creates automatically.
+    if (_selectedFilter == 'Completed') {
+      query = query.where('status', isEqualTo: 'completed');
     }
-    
+
+    // 'Today' and 'This Week' are filtered client-side in _applyDateFilter so we
+    // don't need a composite (userId + dueDate) index.
     return query.snapshots();
+  }
+
+  /// Filters by due date on the client so the query stays on a single-field
+  /// index. 'Completed' is already handled server-side in [_todoStream].
+  List<TodoModel> _applyDateFilter(List<TodoModel> todos) {
+    switch (_selectedFilter) {
+      case 'Today':
+        return todos
+            .where((t) => t.dueDate != null && AppDateUtils.isToday(t.dueDate!))
+            .toList();
+      case 'This Week':
+        return todos
+            .where((t) => t.dueDate != null && AppDateUtils.isThisWeek(t.dueDate!))
+            .toList();
+      default:
+        return todos;
+    }
+  }
+
+  /// Soonest due date first; undated tasks sink to the bottom, newest first.
+  int _byDueDateThenCreated(TodoModel a, TodoModel b) {
+    if (a.dueDate != null && b.dueDate != null) {
+      return a.dueDate!.compareTo(b.dueDate!);
+    }
+    if (a.dueDate != null) return -1;
+    if (b.dueDate != null) return 1;
+    return b.createdAt.compareTo(a.createdAt);
   }
 
   @override
@@ -266,11 +282,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           return _buildOfflineState(context);
         }
         
-        print('Firestore snapshot: hasData=${snapshot.hasData}, data=${snapshot.data}');
-
-        final todos = snapshot.data!.docs.map((doc) {
-          return TodoModel.fromFirestore(doc);
-        }).toList();
+        final docs = snapshot.data?.docs ?? const [];
+        final todos = _applyDateFilter(
+          docs.map(TodoModel.fromFirestore).toList(),
+        )..sort(_byDueDateThenCreated);
 
         if (todos.isEmpty) {
           return _buildEmptyState();

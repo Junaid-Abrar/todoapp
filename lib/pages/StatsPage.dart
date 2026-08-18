@@ -11,7 +11,6 @@ class StatsPage extends StatefulWidget {
 }
 
 class _StatsPageState extends State<StatsPage> {
-  List<TodoModel> _todos = [];
   bool _isLoading = true;
   
   // Stats data
@@ -37,7 +36,11 @@ class _StatsPageState extends State<StatsPage> {
     });
 
     final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
+    if (userId == null) {
+      // Clear the spinner instead of leaving it running forever.
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
 
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -48,16 +51,10 @@ class _StatsPageState extends State<StatsPage> {
       final todos = snapshot.docs.map((doc) => TodoModel.fromFirestore(doc)).toList();
       
       _calculateStats(todos);
-      
-      setState(() {
-        _todos = todos;
-        _isLoading = false;
-      });
+
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
-      print('Error loading todos: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

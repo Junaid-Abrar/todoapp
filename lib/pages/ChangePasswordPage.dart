@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:todoapp/utils/auth_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:todoapp/theme/app_theme.dart';
@@ -343,9 +344,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> with TickerProv
         throw Exception('No user logged in');
       }
 
+      final email = user.email;
+      if (email == null) {
+        // Google- and phone-only accounts have no password to change.
+        throw Exception('no-password-account');
+      }
+
       // Re-authenticate user with current password
       final credential = EmailAuthProvider.credential(
-        email: user.email!,
+        email: email,
         password: _currentPasswordController.text,
       );
       
@@ -373,12 +380,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> with TickerProv
         _isLoading = false;
       });
       
-      String errorMessage = 'Failed to update password';
-      if (e.toString().contains('wrong-password')) {
-        errorMessage = 'Current password is incorrect';
-      } else if (e.toString().contains('weak-password')) {
-        errorMessage = 'New password is too weak';
-      }
+      final errorMessage = e.toString().contains('no-password-account')
+          ? 'This account signs in with Google or phone, so it has no password to change.'
+          : authErrorMessage(e);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

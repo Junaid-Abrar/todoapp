@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// Data model note: the client filters todos with
+// `where('userId', isEqualTo: uid)`. That is a convenience, NOT a security
+// boundary — these rules are what actually enforce per-user isolation.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function ownsExisting() {
+      return isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function ownsIncoming() {
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /Todo/{todoId} {
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming()
+                    && request.resource.data.title is string
+                    && request.resource.data.title.size() > 0
+                    && request.resource.data.title.size() <= 100;
+      // userId must never be reassigned to another account.
+      allow update: if ownsExisting() && ownsIncoming();
+    }
+
+    match /Feedback/{feedbackId} {
+      // Users may submit feedback but not read anyone's, including their own;
+      // triage happens in the Firebase console.
+      allow create: if isSignedIn();
+      allow read, update, delete: if false;
+    }
+
+    // Deny everything not explicitly matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

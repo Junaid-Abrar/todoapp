@@ -5,7 +5,7 @@ import 'package:todoapp/pages/SignInPage.dart';
 import 'package:todoapp/pages/phoneAuthPage.dart';
 
 import '../service/auth_service.dart';
-import 'HomePage.dart';
+import '../utils/auth_error_messages.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
@@ -229,19 +229,19 @@ class _SignUpPageState extends State<SignUpPage> {
             email: email,
             password: password,
           );
-          print("User created: $email");
-
-          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => HomePage()), (route) => false);
-        }
-        catch (e) {
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
-          );
+          // AuthWrapper reacts to the auth state change and swaps in HomePage.
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(authErrorMessage(e))),
+            );
+          }
         } finally {
-          setState(() {
-            circular = false;
-          });
+          if (mounted) {
+            setState(() {
+              circular = false;
+            });
+          }
         }
       },
       child: Container(
