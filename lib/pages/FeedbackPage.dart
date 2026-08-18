@@ -407,7 +407,7 @@ class _FeedbackPageState extends State<FeedbackPage> with TickerProviderStateMix
             ),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'You can also reach us at support@todoapp.com\nWe typically respond within 24 hours.',
+              'Send us a message using the form above and we\'ll take a look.',
               style: theme.textTheme.bodySmall,
             ),
           ],
