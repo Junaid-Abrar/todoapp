@@ -21,6 +21,15 @@ class _PhoneAuthPageState extends State<PhoneAuthPage> {
   AuthClass authClass = AuthClass();
   String verificationId = "";
   String otp = "";
+  Timer? _resendTimer;
+  bool _verifying = false;
+
+  @override
+  void dispose() {
+    _resendTimer?.cancel();
+    phoneController.dispose();
+    super.dispose();
+  }
 
 
   @override
@@ -199,34 +208,52 @@ class _PhoneAuthPageState extends State<PhoneAuthPage> {
           fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
-        onCodeChanged: (code) {},
-        onSubmit: (verificationCode) {},
+        onCodeChanged: (code) {
+          otp = code;
+        },
+        onSubmit: _submitOtp,
       ),
     );
   }
 
 
   void StartTimer() {
+    _resendTimer?.cancel();
     const oneSec = Duration(seconds: 1);
-    Timer timer = Timer.periodic(oneSec, (timer) {
+    _resendTimer = Timer.periodic(oneSec, (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (start == 0) {
-        setState(() {
-          timer.cancel();
-          wait = false;
-        });
+        timer.cancel();
+        setState(() => wait = false);
       } else {
-        setState(() {
-          start--;
-        });
+        setState(() => start--);
       }
     });
   }
 
-  void setData() {
-    setState(() {
-      verificationId = verificationId;
+  /// Called by AuthClass once Firebase hands back a verificationId.
+  void setData(String id) {
+    if (!mounted) return;
+    setState(() => verificationId = id);
+  }
 
-    });
-    StartTimer();
+  Future<void> _submitOtp(String code) async {
+    if (_verifying) return;
+    setState(() => _verifying = true);
+
+    final error = await authClass.verifyCode(verificationId, code);
+
+    if (!mounted) return;
+    setState(() => _verifying = false);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    // Signed in: AuthWrapper picks up the auth state change and shows HomePage.
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 }

@@ -41,3 +41,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Build artifacts (these grow to ~1GB; run `flutter clean` to reclaim)
+/build/
+android/.gradle/
+android/local.properties
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+macos/Pods/
+ios/Pods/

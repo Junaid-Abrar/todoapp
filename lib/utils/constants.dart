@@ -50,18 +50,20 @@ class AppConstants {
   // Default values
   static const String defaultCategory = 'Personal';
   static const String defaultPriority = 'Medium';
-  
+
   // Validation
   static const int maxTitleLength = 100;
   static const int maxDescriptionLength = 500;
   static const int minTitleLength = 1;
-  
+
   // UI messages
-  static const String emptyTodosMessage = 'No todos yet.\nTap + to create your first task!';
+  static const String emptyTodosMessage =
+      'No todos yet.\nTap + to create your first task!';
   static const String completedTodosMessage = 'Great job! All tasks completed.';
   static const String errorMessage = 'Something went wrong. Please try again.';
-  static const String networkErrorMessage = 'No internet connection. Please check your network.';
-  
+  static const String networkErrorMessage =
+      'No internet connection. Please check your network.';
+
   // Feature flags
   static const bool enableNotifications = true;
   static const bool enableAnalytics = false;

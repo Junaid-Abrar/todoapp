@@ -1,6 +1,6 @@
 {
-    "name": "todoapp",
-    "short_name": "todoapp",
+    "name": "Cadence",
+    "short_name": "Cadence",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

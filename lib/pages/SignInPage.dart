@@ -4,8 +4,8 @@ import 'package:todoapp/pages/SignUpPage.dart';
 import 'package:todoapp/pages/phoneAuthPage.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:todoapp/service/auth_service.dart';
+import 'package:todoapp/utils/auth_error_messages.dart';
 
-import 'HomePage.dart';
 
 class SignInPage extends StatefulWidget {
   @override
@@ -21,6 +21,14 @@ class _SignInPageState extends State<SignInPage> {
   bool circular = false;
   bool _obscurePassword = true;
   AuthClass authClass = AuthClass();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -229,19 +237,23 @@ class _SignInPageState extends State<SignInPage> {
         });
 
         try {
-          firebase_auth.UserCredential userCredential = await firebaseAuth.signInWithEmailAndPassword(
-              email: email,
-              password: password,
-            );
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
+          await firebaseAuth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
           );
+          // AuthWrapper reacts to the auth state change and swaps in HomePage.
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(authErrorMessage(e))),
+            );
+          }
         } finally {
-          setState(() {
-            circular = false;
-          });
+          if (mounted) {
+            setState(() {
+              circular = false;
+            });
+          }
         }
       },
       child: Container(

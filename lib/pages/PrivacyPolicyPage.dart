@@ -210,11 +210,10 @@ These services have their own privacy policies and data handling practices.''',
           
           _buildSection(
             title: 'Contact Us',
-            content: '''If you have any questions about this Privacy Policy or our data practices, please contact us:
+            content: '''If you have any questions about this Privacy Policy or our data practices, you can reach us through the app:
 
-• Email: support@todoapp.com
-• Through the app's feedback feature
-• Via the settings page in the app
+• Open Settings and choose Send Feedback
+• Include as much detail as you can so we can help
 
 We will respond to your inquiry within 48 hours.''',
             icon: Icons.contact_support,

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -406,7 +407,7 @@ class _FeedbackPageState extends State<FeedbackPage> with TickerProviderStateMix
             ),
             const SizedBox(height: AppConstants.spacing8),
             Text(
-              'You can also reach us at support@todoapp.com\nWe typically respond within 24 hours.',
+              'Send us a message using the form above and we\'ll take a look.',
               style: theme.textTheme.bodySmall,
             ),
           ],
@@ -451,23 +452,18 @@ class _FeedbackPageState extends State<FeedbackPage> with TickerProviderStateMix
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      
-      // Simulate sending feedback (in a real app, you'd send this to your backend)
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Create feedback data
-      final feedbackData = {
+
+      await FirebaseFirestore.instance.collection('Feedback').add({
         'userId': user?.uid ?? 'anonymous',
         'userEmail': user?.email ?? 'N/A',
         'rating': _rating,
         'category': _selectedCategory,
         'subject': _subjectController.text.trim(),
         'message': _messageController.text.trim(),
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-      
-      print('Feedback submitted: $feedbackData');
-      
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -483,11 +479,12 @@ class _FeedbackPageState extends State<FeedbackPage> with TickerProviderStateMix
         Navigator.pop(context);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
-      
-      if (mounted) {
+
+      {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to send feedback. Please try again.'),

@@ -493,15 +493,12 @@ class _SettingsPageState extends State<SettingsPage> with TickerProviderStateMix
             ),
             ElevatedButton(
               onPressed: () async {
-                Navigator.pop(context);
+                final navigator = Navigator.of(context);
+                navigator.pop(); // close the dialog
                 await _authClass.logout();
-                // Navigate to login and clear all routes
-                if (mounted) {
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/', 
-                    (Route<dynamic> route) => false,
-                  );
-                }
+                // AuthWrapper listens to authStateChanges() and swaps in the
+                // sign-in page on its own, so just unwind back to it.
+                navigator.popUntil((route) => route.isFirst);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,

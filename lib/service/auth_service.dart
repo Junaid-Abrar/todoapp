@@ -127,23 +127,38 @@ class AuthClass {
     }
   }
 
-  Future<void> verifyPhoneNumber(String phoneNumber, BuildContext context , Function setData) async {
-    PhoneVerificationCompleted verificationCompleted = (
-        PhoneAuthCredential phoneAuthCredential) async {
-      showSnackBar(context, 'Verification code sent');
-    };
+  /// Starts phone verification. [onCodeSent] receives the verificationId that
+  /// must later be paired with the user's SMS code in [verifyCode].
+  Future<void> verifyPhoneNumber(
+    String phoneNumber,
+    BuildContext context,
+    void Function(String verificationId) onCodeSent,
+  ) async {
+    void verificationCompleted(PhoneAuthCredential phoneAuthCredential) async {
+      // Android can auto-retrieve the SMS and sign in without user input.
+      try {
+        await auth.signInWithCredential(phoneAuthCredential);
+      } catch (e) {
+        if (context.mounted) showSnackBar(context, 'Auto verification failed');
+      }
+    }
 
-    PhoneVerificationFailed verificationFailed = (FirebaseAuthException e) {
-      showSnackBar(context, 'Verification failed');
-    };
+    void verificationFailed(FirebaseAuthException e) {
+      if (context.mounted) {
+        showSnackBar(context, _phoneErrorMessage(e.code));
+      }
+    }
 
-    PhoneCodeSent codeSent = (String verificationId, int? forceResendingToken) async {
-      showSnackBar(context, 'Verification code sent');
-    };
+    void codeSent(String verificationId, int? forceResendingToken) {
+      onCodeSent(verificationId);
+      if (context.mounted) showSnackBar(context, 'Verification code sent');
+    }
 
-    PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout = (String verificationId) async {
-      showSnackBar(context, 'Time out');
-    };
+    void codeAutoRetrievalTimeout(String verificationId) {
+      // Keep the id so a manually typed code still works after auto-retrieval
+      // gives up.
+      onCodeSent(verificationId);
+    }
 
     try {
       await auth.verifyPhoneNumber(
@@ -154,7 +169,20 @@ class AuthClass {
         codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
       );
     } catch (e) {
-    showSnackBar(context, 'Error: $e');
+      if (context.mounted) showSnackBar(context, 'Could not send code. Try again.');
+    }
+  }
+
+  String _phoneErrorMessage(String code) {
+    switch (code) {
+      case 'invalid-phone-number':
+        return 'That phone number looks incorrect.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'quota-exceeded':
+        return 'SMS quota exceeded. Please try again later.';
+      default:
+        return 'Verification failed. Please try again.';
     }
   }
 
@@ -166,13 +194,28 @@ class AuthClass {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  Future<void> verifyCode(String verificationId, String code) async {
+  /// Returns null on success, or a user-facing error message on failure.
+  Future<String?> verifyCode(String verificationId, String code) async {
+    if (verificationId.isEmpty) {
+      return 'Request a code first.';
+    }
     try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-          verificationId: verificationId, smsCode: code);
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: code,
+      );
       await auth.signInWithCredential(credential);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-verification-code') {
+        return 'That code is incorrect.';
+      }
+      if (e.code == 'session-expired') {
+        return 'That code expired. Request a new one.';
+      }
+      return 'Verification failed. Please try again.';
     } catch (e) {
-      print(e);
+      return 'Verification failed. Please try again.';
     }
   }
 }

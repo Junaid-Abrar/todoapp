@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Firebase Auth and Cloud Firestore in release builds.
+         The debug/profile manifests declare this separately for dev tooling. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
-        android:label="todoapp"
+        android:label="Cadence"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

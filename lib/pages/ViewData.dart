@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:todoapp/pages/HomePage.dart';
+import 'package:todoapp/theme/app_theme.dart';
+import 'package:todoapp/utils/constants.dart';
 
 class ViewData extends StatefulWidget {
   ViewData({required Key key, this.document, required this.id})
@@ -18,29 +19,41 @@ class ViewData extends StatefulWidget {
 class _ViewDataState extends State<ViewData> {
   late TextEditingController titleController;
   late TextEditingController descriptionController;
-  late String type;
 
+  /// Matches TodoModel's priority values: 'Low' | 'Medium' | 'High'.
+  late String priority;
+
+  /// One of AppConstants.todoCategories.
   late String category;
   bool edit = false;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    String title =
-        widget.document!['title'] == null || widget.document!['title'] == ""
-            ? "Hey There"
-            : widget.document!['title'];
-    titleController = TextEditingController(text: widget.document!['title']);
+    final doc = widget.document ?? const <String, dynamic>{};
+
+    titleController = TextEditingController(text: doc['title'] as String? ?? '');
     descriptionController =
-        TextEditingController(text: widget.document!['description']);
-    type = widget.document!['task'] == null || widget.document!['task'] == ""
-        ? "important"
-        : widget.document!['task'];
-    category = widget.document!['category'] == null ||
-            widget.document!['category'] == ""
-        ? "Food"
-        : widget.document!['category'];
+        TextEditingController(text: doc['description'] as String? ?? '');
+
+    // Firestore stores priority lowercase ('high'); the chips use title case.
+    final storedPriority = (doc['priority'] as String? ?? '').toLowerCase();
+    priority = AppConstants.priorityLevels.firstWhere(
+      (p) => p.toLowerCase() == storedPriority,
+      orElse: () => AppConstants.defaultPriority,
+    );
+
+    final storedCategory = doc['category'] as String? ?? '';
+    category = AppConstants.todoCategories.contains(storedCategory)
+        ? storedCategory
+        : AppConstants.defaultCategory;
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descriptionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -72,8 +85,19 @@ class _ViewDataState extends State<ViewData> {
                     children: [
                       IconButton(onPressed: () {
 
-                        FirebaseFirestore.instance.collection("Todo").doc(widget.id).delete().then((value) {
-                          Navigator.pop(context);
+                        FirebaseFirestore.instance
+                            .collection("Todo")
+                            .doc(widget.id)
+                            .delete()
+                            .then((_) {
+                          if (mounted) Navigator.pop(context);
+                        }).catchError((_) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Failed to delete task.')),
+                            );
+                          }
                         });
 
                       }, icon: Icon(Icons.delete) , color: Colors.redAccent, iconSize: 28,),
@@ -127,18 +151,16 @@ class _ViewDataState extends State<ViewData> {
                     SizedBox(
                       height: 30,
                     ),
-                    label("Task Type"),
+                    label("Priority"),
                     SizedBox(
                       height: 12,
                     ),
-                    Row(
-                      children: [
-                        taskSelect("important", 0xFFE53935),
-                        SizedBox(
-                          width: 20,
-                        ),
-                        taskSelect("planned", 0xFF26C6DA),
-                      ],
+                    Wrap(
+                      spacing: 20,
+                      runSpacing: 10,
+                      children: AppConstants.priorityLevels
+                          .map((p) => prioritySelect(p))
+                          .toList(),
                     ),
                     SizedBox(
                       height: 30,
@@ -156,36 +178,11 @@ class _ViewDataState extends State<ViewData> {
                       height: 10,
                     ),
                     Wrap(
+                      spacing: 10,
                       runSpacing: 10,
-                      children: [
-                        categorySelect("Food", 0xFFFFD1DC),
-                        // Pastel Red
-                        SizedBox(
-                          width: 20,
-                        ),
-
-                        // Orange
-                        SizedBox(
-                          width: 20,
-                        ),
-                        categorySelect("Work", 0xFFADD8E6),
-                        // Light Blue (representing 'blue' as per your request)
-                        SizedBox(
-                          width: 20,
-                        ),
-                        categorySelect("Design", 0xFF00008B),
-                        // Dark Blue
-                        SizedBox(
-                          width: 20,
-                        ),
-                        categorySelect("Run", 0xFFADD8E6),
-                        // Light Blue
-                        SizedBox(
-                          width: 20,
-                        ),
-                        categorySelect("Exercise", 0xFF26C6DA),
-                        // Keeping original or specify a new one
-                      ],
+                      children: AppConstants.todoCategories
+                          .map((c) => categorySelect(c))
+                          .toList(),
                     ),
                     SizedBox(
                       height: 30,
@@ -204,20 +201,37 @@ class _ViewDataState extends State<ViewData> {
     );
   }
 
+  Future<void> _updateTodo() async {
+    final title = titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Task title cannot be empty')),
+      );
+      return;
+    }
+
+    try {
+      // Only the user-editable fields; status, priority casing, createdAt and
+      // userId are left untouched so the document stays valid for TodoModel.
+      await FirebaseFirestore.instance.collection("Todo").doc(widget.id).update({
+        "title": title,
+        "description": descriptionController.text.trim(),
+        "category": category,
+        "priority": priority.toLowerCase(),
+      });
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update task. Please try again.')),
+        );
+      }
+    }
+  }
+
   Widget Button() {
     return InkWell(
-      onTap: () {
-        FirebaseFirestore.instance.collection("Todo").doc(widget.id).update({
-          "title": titleController.text,
-          "task": type,
-          "category": category,
-          "description": descriptionController.text,
-        });
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) {
-          return const HomePage();
-        }));
-      },
+      onTap: _updateTodo,
       child: Container(
         height: 55,
         width: MediaQuery.of(context).size.width,
@@ -273,51 +287,43 @@ class _ViewDataState extends State<ViewData> {
     );
   }
 
-  Widget taskSelect(String label, int color) {
-    return InkWell(
-      onTap: edit
-          ? () {
-              setState(() {
-                type = label;
-              });
-            }
-          : null,
-      child: Chip(
-        backgroundColor: type == label ? Colors.white : Color(color),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        label: Text(
-          label,
-          style: TextStyle(
-            color: type == label ? Colors.black : Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        labelPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      ),
+  Widget prioritySelect(String label) {
+    final color = AppTheme.priorityColors[label] ?? Colors.blueGrey;
+    return _selectableChip(
+      label: label,
+      color: color,
+      selected: priority == label,
+      onTap: () => setState(() => priority = label),
     );
   }
 
-  Widget categorySelect(String label, int color) {
+  Widget categorySelect(String label) {
+    final color = AppTheme.categoryColors[label] ?? Colors.blueGrey;
+    return _selectableChip(
+      label: label,
+      color: color,
+      selected: category == label,
+      onTap: () => setState(() => category = label),
+    );
+  }
+
+  Widget _selectableChip({
+    required String label,
+    required Color color,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
-      onTap: edit
-          ? () {
-              setState(() {
-                category = label;
-              });
-            }
-          : null,
+      onTap: edit ? onTap : null,
       child: Chip(
-        backgroundColor: category == label ? Colors.white : Color(color),
+        backgroundColor: selected ? Colors.white : color,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
         label: Text(
           label,
           style: TextStyle(
-            color: category == label ? Colors.black : Colors.white,
+            color: selected ? Colors.black : Colors.white,
             fontSize: 17,
             fontWeight: FontWeight.w600,
           ),
