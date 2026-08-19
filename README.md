@@ -1,11 +1,28 @@
-# Cadence
+<h1 align="center">Cadence</h1>
 
-A cross-platform task manager built with Flutter and Firebase. Tasks carry a
-priority, a category and an optional due date; a calendar view shows what's
-due when, and a stats view tracks completion rhythm over the week.
+<p align="center">
+  A cross-platform task manager built with Flutter and Firebase.
+</p>
 
-> **Status:** working prototype. Auth, task CRUD, calendar and stats are
-> functional. See [Known limitations](#known-limitations) before deploying.
+<p align="center">
+  <a href="https://github.com/Junaid-Abrar/todoapp/actions/workflows/ci.yml">
+    <img alt="CI" src="https://github.com/Junaid-Abrar/todoapp/actions/workflows/ci.yml/badge.svg">
+  </a>
+  <img alt="Flutter" src="https://img.shields.io/badge/Flutter-3.35-02569B?logo=flutter&logoColor=white">
+  <img alt="Firebase" src="https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-FFCA28?logo=firebase&logoColor=black">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
+</p>
+
+---
+
+Tasks carry a priority, a category and an optional due date. A calendar view
+shows what's due when, and a stats view tracks completion rhythm across the
+week. Runs on **Android, iOS and web** from one codebase.
+
+> [!NOTE]
+> **Working prototype.** Authentication, task CRUD, calendar and statistics all
+> work. Read [Known limitations](#known-limitations) before deploying it
+> anywhere real.
 
 ## Features
 
@@ -20,13 +37,6 @@ due when, and a stats view tracks completion rhythm over the week.
   readable without a connection and sync when it returns
 - **Light and dark themes** — Material 3, with the choice persisted to secure storage
 - **Account management** — profile editing, password change, and feedback submission
-
-## Screenshots
-
-<!-- Add screenshots here: docs/screenshots/{home,calendar,stats,dark}.png -->
-| Home | Calendar | Stats |
-| --- | --- | --- |
-| _todo_ | _todo_ | _todo_ |
 
 ## Tech stack
 
@@ -171,6 +181,10 @@ filters are applied client-side so that no additional composite index over
 
 ## Known limitations
 
+- **Desktop is not configured.** The repository contains `macos/`, `windows/`
+  and `linux/` folders from `flutter create`, but `firebase_options.dart` has no
+  entries for them — launching on desktop throws `UnsupportedError` at startup.
+  Run `flutterfire configure` and select those platforms to enable them.
 - **Push notifications are not implemented.** `AppConstants.enableNotifications`
   is a placeholder flag; no scheduling or FCM integration exists yet.
 - **No pagination.** The home list streams every task for the user. This is fine
