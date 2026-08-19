@@ -20,9 +20,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Scoped to test/ and the utils added since the format sweep began.
+      # The rest of lib/ predates it and is not yet dart format clean;
+      # widening this is tracked separately so the reformat lands as its
+      # own reviewable commit rather than burying real changes.
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed lib test
-        continue-on-error: true
+        run: dart format --output=none --set-exit-if-changed test lib/utils
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos

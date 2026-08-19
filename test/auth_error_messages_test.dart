@@ -25,7 +25,8 @@ void main() {
 
     test('never leaks the raw exception for unknown errors', () {
       final message = authErrorMessage(
-        FirebaseAuthException(code: 'some-internal-code', message: 'INTERNAL x'),
+        FirebaseAuthException(
+            code: 'some-internal-code', message: 'INTERNAL x'),
       );
       expect(message, 'Something went wrong. Please try again.');
       expect(message, isNot(contains('INTERNAL')));

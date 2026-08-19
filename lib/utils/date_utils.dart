@@ -47,18 +47,18 @@ class AppDateUtils {
 
   static bool isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year && 
-           date.month == now.month && 
-           date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   static bool isThisWeek(DateTime date) {
     final now = DateTime.now();
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
-    
+
     return date.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
-           date.isBefore(endOfWeek.add(const Duration(days: 1)));
+        date.isBefore(endOfWeek.add(const Duration(days: 1)));
   }
 
   static int daysBetween(DateTime start, DateTime end) {
@@ -69,8 +69,9 @@ class AppDateUtils {
 
   static List<DateTime> getWeekDates([DateTime? date]) {
     final targetDate = date ?? DateTime.now();
-    final startOfWeek = targetDate.subtract(Duration(days: targetDate.weekday - 1));
-    
+    final startOfWeek =
+        targetDate.subtract(Duration(days: targetDate.weekday - 1));
+
     return List.generate(7, (index) => startOfWeek.add(Duration(days: index)));
   }
 
